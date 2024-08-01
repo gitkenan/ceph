@@ -3520,6 +3520,16 @@ bool OSDMonitor::preprocess_boot(MonOpRequestRef op)
 	  << "testing and development.";
 	goto ignore;
       }
+      elif (!osdmap.is_osd_pool_default_crimson_set(cct)){
+        mon.clog->info()
+          << "Booting crimson-osd without osd_pool_default_crimson set."
+          << "Run ``ceph config set mon osd_pool_default_crimson true'` to set "
+          << "osd_pool_default_crimson flag. Note that crimson-osd is "
+          << "considered unstable and may result in crashes or "
+          << "data loss.  Its usage should be restricted to "
+	  << "testing and development.";
+        goto ignore;
+      }
     } else {
       derr << __func__ << ": osd " << m->get_orig_source_inst()
 	   << " sent non-crimson osd_type field in MOSDBoot: "
