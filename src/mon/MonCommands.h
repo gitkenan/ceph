@@ -1109,6 +1109,15 @@ COMMAND("osd pool rmsnap "
 	"name=pool,type=CephPoolname "
 	"name=snap,type=CephString",
 	"remove snapshot <snap> from <pool>", "osd", "rw")
+COMMAND("osd pool force-remove-snap "
+	"name=pool,type=CephPoolname "
+	"name=lower_snapid_bound,type=CephInt,range=0,req=false "
+	"name=upper_snapid_bound,type=CephInt,range=0,req=false "
+	"name=dry_run,type=CephBool,req=false ",
+	"Forces removal of snapshots in the range "
+	"[lower_snapid_bound, upper_snapid_bound) on pool <pool> in "
+	"order to cause OSDs to re-trim them.",
+	"osd", "rw")
 COMMAND("osd pool ls "
 	"name=detail,type=CephChoices,strings=detail,req=false",
 	"list pools", "osd", "r")
@@ -1381,8 +1390,25 @@ COMMAND("config generate-minimal-conf",
 	"Generate a minimal ceph.conf file",
 	"config", "r")
 
+/* NVMeofGwMon*/
+COMMAND("nvme-gw create"
+    " name=id,type=CephString"
+    " name=pool,type=CephString"
+    " name=group,type=CephString",
+    "create nvmeof gateway id for (pool, group)",
+    "mgr", "rw")
+COMMAND("nvme-gw delete"
+    " name=id,type=CephString"
+    " name=pool,type=CephString"
+    " name=group,type=CephString",
+    "delete nvmeof gateway id for (pool, group)",
+    "mgr", "rw")
 
-
+COMMAND("nvme-gw show"
+   " name=pool,type=CephString"
+   " name=group,type=CephString",
+   " show nvmeof gateways within (pool, group)",
+   "mon", "r")
 
 // these are tell commands that were implemented as CLI commands in
 // the broken pre-octopus way that we want to allow to work when a
