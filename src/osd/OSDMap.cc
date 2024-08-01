@@ -7330,6 +7330,15 @@ void OSDMap::check_health(CephContext *cct,
       ss << down_in_osds.size() << " osds down";
       auto& d = checks->add("OSD_DOWN", HEALTH_WARN, ss.str(),
 			    down_in_osds.size());
+      bool crimson_build_but_flags_disabled = cmd_getval_or<bool>(cmdmap, "crimson", false) &&
+               !cct->_conf->get_val<bool>("osd_pool_default_crimson");
+      if (crimson_build_but_flags_disabled) {
+        ostringstream ss;
+        ss << down_in_osds.size()
+           << " Crimson OSDs are down because relevant flags are not enabled.";
+        auto& d = checks->add("CRIMSON_OSD_DOWN", HEALTH_WARN, ss.str());
+        d.detail.push_back("see https://docs.ceph.com/en/latest/dev/crimson/crimson/#enabling-crimson");
+      }
       for (auto it = down_in_osds.begin(); it != down_in_osds.end(); ++it) {
 	ostringstream ss;
 	ss << "osd." << *it << " (";
