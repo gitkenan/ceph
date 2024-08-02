@@ -24,6 +24,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "OSDMap.h"
+#include "common/cmdparse.h"
 #include "common/config.h"
 #include "common/errno.h"
 #include "common/Formatter.h"
@@ -33,6 +34,7 @@
 #include "include/str_map.h"
 
 #include "common/code_environment.h"
+#include "common/config.h"
 #include "mon/health_check.h"
 
 #include "crush/CrushTreeDumper.h"
@@ -57,6 +59,9 @@ using ceph::decode;
 using ceph::encode;
 using ceph::Formatter;
 
+#ifndef WITH_SEASTAR
+  #include "common/Cond.h"
+#endif
 #define dout_subsys ceph_subsys_osd
 
 MEMPOOL_DEFINE_OBJECT_FACTORY(OSDMap, osdmap, osdmap);
@@ -7221,6 +7226,7 @@ void OSDMap::check_health(CephContext *cct,
     unordered_map<int, set<int> > subtree_type_down;
     unordered_map<int, int> num_osds_subtree;
     int max_type = crush->get_max_type_id();
+    cmdmap_t cmdmap;
 
     for (int i = 0; i < get_max_osd(); i++) {
       if (!exists(i)) {
@@ -7330,13 +7336,18 @@ void OSDMap::check_health(CephContext *cct,
       ss << down_in_osds.size() << " osds down";
       auto& d = checks->add("OSD_DOWN", HEALTH_WARN, ss.str(),
 			    down_in_osds.size());
-      bool crimson_build_but_flags_disabled = cmd_getval_or<bool>(cmdmap, "crimson", false) &&
-               !cct->_conf->get_val<bool>("osd_pool_default_crimson");
-      if (crimson_build_but_flags_disabled) {
+      bool crimson_build = false;
+      bool crimson_pool_is_configured = false;
+      #ifdef WITH_SEASTAR
+      crimson_build = true;
+      crimson_pool_is_configured = ceph::common::cmd_getval_or<bool>(cmdmap, "crimson", false) ||
+               cct->_conf->get_val<bool>("osd_pool_default_crimson");
+      #endif
+      if (crimson_build && !crimson_pool_is_configured) {
         ostringstream ss;
         ss << down_in_osds.size()
            << " Crimson OSDs are down because relevant flags are not enabled.";
-        auto& d = checks->add("CRIMSON_OSD_DOWN", HEALTH_WARN, ss.str());
+        auto& d = checks->add("CRIMSON_OSD_DOWN", HEALTH_WARN, ss.str(), down_in_osds.size());
         d.detail.push_back("see https://docs.ceph.com/en/latest/dev/crimson/crimson/#enabling-crimson");
       }
       for (auto it = down_in_osds.begin(); it != down_in_osds.end(); ++it) {

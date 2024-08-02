@@ -3520,7 +3520,7 @@ bool OSDMonitor::preprocess_boot(MonOpRequestRef op)
 	  << "testing and development.";
 	goto ignore;
       }
-      elif (!osdmap.is_osd_pool_default_crimson_set(cct)){
+      else if (!osdmap.is_osd_pool_default_crimson_set(cct)){
         mon.clog->info()
           << "Booting crimson-osd without osd_pool_default_crimson set."
           << "Run ``ceph config set mon osd_pool_default_crimson true'` to set "
@@ -13255,7 +13255,7 @@ bool OSDMonitor::prepare_command_impl(MonOpRequestRef op,
     bool bulk = cmd_getval_or<bool>(cmdmap, "bulk", 0);
 
     bool crimson = cmd_getval_or<bool>(cmdmap, "crimson", false) ||
-      cct->_conf.get_val<bool>("osd_pool_default_crimson");
+      cct->_conf->get_val<bool>("osd_pool_default_crimson");
 
     err = prepare_new_pool(poolstr,
 			   -1, // default crush rule
